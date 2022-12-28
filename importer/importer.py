@@ -35,15 +35,15 @@ class ImporterReviewer:
             if 'failed' in paragraph.get_attribute('title')
         ]
         results =  {
-            'works': {
+            'work-entries': {
                 'total': int(matches[0][0].split(':')[-1].strip()),
                 'failed': int(matches[0][1][1].split(' ')[1])
             },
-            'collections': {
+            'collection-entries': {
                 'total': int(matches[1][0].split(':')[-1].strip()),
                 'failed': int(matches[1][1][1].split(' ')[1])
             },
-            'filesets': {
+            'file-set-entries': {
                 'total': int(matches[2][0].split(':')[-1].strip()),
                 'failed': int(matches[2][1][1].split(' ')[1])
             }
@@ -53,6 +53,7 @@ class ImporterReviewer:
 
     def access_importer(self, importer):
         things_to_check = []
+        all_failures = []
         """Access the importer"""
         self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?locale=en')
         """Determine the total number of attempts and how many things failed"""
@@ -61,8 +62,47 @@ class ImporterReviewer:
         for k, v in totals_and_failures.items():
             if v['failed'] > 0:
                 things_to_check.append((k, math.ceil(v['total']/30)))
-        results = [link.text for link in self.s.driver.find_elements_by_xpath('//tr')]
-        return things_to_check
+        for thing in things_to_check:
+            failures = self.process_failed_imports(importer, thing)
+            for failure in failures:
+                all_failures.append(failure)
+        return all_failures
+
+    def process_failed_imports(self, importer, type_to_check):
+        all_results = []
+        """Initial Route Pattern
+
+        https://dc.utk-hyku-production.notch8.cloud/importers/91#file-set-entries
+        """
+        initial_results = self.__initial_process_initial_page(importer, type_to_check[0])
+        for result in initial_results:
+            all_results.append(result)
+        page = 2
+        """Subsequent Route Pattern
+
+        https://dc.utk-hyku-production.notch8.cloud/importers/91?file_set_entries_page=2#file-set-entries
+        """
+        while page <= type_to_check[1]:
+            results = self.__process_non_initial_page(importer, type_to_check[0], page)
+            for result in results:
+                all_results.append(result)
+            page += 1
+        return all_results
+
+    def __initial_process_initial_page(self, importer, import_type):
+        self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}#{import_type}')
+        return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
+
+    def __process_non_initial_page(self, importer, import_type, page):
+        route_dereferencer = {
+            'file-set-entries': 'file_set_entries_page',
+            'collection-entries': 'collection_entries_page',
+            'works-entries': 'work_entries_page'
+        }
+        self.s.driver.get(
+            f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
+        )
+        return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
 
 if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
