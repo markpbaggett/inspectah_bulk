@@ -24,15 +24,41 @@ class ImporterReviewer:
     def take_screenshot(self, output):
         return self.s.driver.save_screenshot(f'{output}.png')
 
+    def __determine_total_and_failures(self):
+        matches  = [
+            (
+                paragraph.text,
+                [value for value in paragraph.get_attribute('title').split(',')]
+            )
+            for paragraph in self.s.driver.find_elements_by_xpath('//p')
+            if 'failed' in paragraph.get_attribute('title')
+        ]
+        results =  {
+            'works': {
+                'total': int(matches[0][0].split(':')[-1].strip()),
+                'failed': int(matches[0][1][1].split(' ')[1])
+            },
+            'collections': {
+                'total': int(matches[1][0].split(':')[-1].strip()),
+                'failed': int(matches[1][1][1].split(' ')[1])
+            },
+            'filesets': {
+                'total': int(matches[2][0].split(':')[-1].strip()),
+                'failed': int(matches[2][1][1].split(' ')[1])
+            }
+        }
+        return results
+
+
     def access_importer(self, importer):
         errors = []
         self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?locale=en')
+        totals_and_failures = self.__determine_total_and_failures()
         results = [link.text for link in self.s.driver.find_elements_by_xpath('//tr')]
-        pagination = [link.get_attribute('href') for link in self.s.driver.find_elements_by_xpath('//ul[@class="pagination"]/li/a')]
-        return pagination
+        return totals_and_failures
 
 if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
     x = ImporterReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    print(x.access_importer(25))
+    print(x.access_importer(91))
