@@ -1,6 +1,7 @@
 from requestium import Session, Keys
 from selenium import webdriver
 import yaml
+import math
 
 
 class ImporterReviewer:
@@ -51,11 +52,17 @@ class ImporterReviewer:
 
 
     def access_importer(self, importer):
-        errors = []
+        things_to_check = []
+        """Access the importer"""
         self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?locale=en')
+        """Determine the total number of attempts and how many things failed"""
         totals_and_failures = self.__determine_total_and_failures()
+        """If any imports failed, add what failed and how many pages of imports the thing has."""
+        for k, v in totals_and_failures.items():
+            if v['failed'] > 0:
+                things_to_check.append((k, math.ceil(v['total']/30)))
         results = [link.text for link in self.s.driver.find_elements_by_xpath('//tr')]
-        return totals_and_failures
+        return things_to_check
 
 if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
