@@ -2,6 +2,7 @@ from requestium import Session, Keys
 from selenium import webdriver
 import yaml
 import math
+from tqdm import tqdm
 
 
 class ImporterReviewer:
@@ -50,7 +51,6 @@ class ImporterReviewer:
         }
         return results
 
-
     def access_importer(self, importer):
         things_to_check = []
         all_failures = []
@@ -82,11 +82,13 @@ class ImporterReviewer:
 
         https://dc.utk-hyku-production.notch8.cloud/importers/91?file_set_entries_page=2#file-set-entries
         """
-        while page <= type_to_check[1]:
-            results = self.__process_non_initial_page(importer, type_to_check[0], page)
-            for result in results:
-                all_results.append(result)
-            page += 1
+        with tqdm(total=type_to_check[1] - 1) as pbar:
+            while page <= type_to_check[1]:
+                results = self.__process_non_initial_page(importer, type_to_check[0], page)
+                for result in results:
+                    all_results.append(result)
+                page += 1
+                pbar.update(1)
         return all_results
 
     def __initial_process_initial_page(self, importer, import_type):
@@ -103,6 +105,7 @@ class ImporterReviewer:
             f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
         )
         return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
+
 
 if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
