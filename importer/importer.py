@@ -20,6 +20,7 @@ class ImporterReviewer:
             )
 
     def sign_in_to_hyku(self, username, password):
+        print(f'\nSigning in to Hyku\n')
         self.s.driver.find_element_by_xpath("//input[@id='user_email']").send_keys(username, Keys.ENTER)
         self.s.driver.find_element_by_xpath("//input[@id='user_password']").send_keys(password, Keys.ENTER)
         return
@@ -52,7 +53,7 @@ class ImporterReviewer:
         }
         return results
 
-    def access_importer(self, importer):
+    def review_importer(self, importer, verbose=False):
         things_to_check = []
         all_failures = []
         """Access the importer"""
@@ -67,7 +68,10 @@ class ImporterReviewer:
             failures = self.process_failed_imports(importer, thing)
             for failure in failures:
                 all_failures.append(failure)
-        return all_failures
+        if verbose is True:
+            return all_failures
+        else:
+            return [failure.split(' ')[0] for failure in all_failures]
 
     def process_failed_imports(self, importer, type_to_check):
         all_results = []
@@ -112,4 +116,8 @@ if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
     x = ImporterReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    print(x.access_importer(91))
+    importer = 91
+    failures = x.review_importer(importer)
+    with open(f'failures/{importer}.txt', 'w') as output:
+        for failure in failures:
+            output.write(f'{failure}\n')
