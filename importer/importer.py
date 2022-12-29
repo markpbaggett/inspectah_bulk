@@ -13,6 +13,7 @@ class ImporterReviewer:
             default_timeout=15,
             webdriver_options={'arguments': ['headless']}
         )
+        self.hyku_instance = hyku_instance
         if initial_auth is not None:
             self.s.driver.get(
                 f'https://{initial_auth[0]}:{initial_auth[1]}@{hyku_instance.replace("https://", "")}/users/sign_in?locale=en'
@@ -55,7 +56,7 @@ class ImporterReviewer:
         things_to_check = []
         all_failures = []
         """Access the importer"""
-        self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?locale=en')
+        self.s.driver.get(f'{self.hyku_instance}/importers/{importer}?locale=en')
         """Determine the total number of attempts and how many things failed"""
         totals_and_failures = self.__determine_total_and_failures()
         """If any imports failed, add what failed and how many pages of imports the thing has."""
@@ -92,7 +93,7 @@ class ImporterReviewer:
         return all_results
 
     def __initial_process_initial_page(self, importer, import_type):
-        self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}#{import_type}')
+        self.s.driver.get(f'{self.hyku_instance}/importers/{importer}#{import_type}')
         return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
 
     def __process_non_initial_page(self, importer, import_type, page):
@@ -102,7 +103,7 @@ class ImporterReviewer:
             'works-entries': 'work_entries_page'
         }
         self.s.driver.get(
-            f'https://dc.utk-hyku-production.notch8.cloud/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
+            f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
         )
         return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
 
