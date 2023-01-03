@@ -97,8 +97,9 @@ class ImporterReviewer:
         return all_results
 
     def __initial_process_initial_page(self, importer, import_type):
+        # print(f'{self.hyku_instance}/importers/{importer}#{import_type}')
         self.s.driver.get(f'{self.hyku_instance}/importers/{importer}#{import_type}')
-        return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
+        return [f"{link.text} PageInitial" for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text or 'Pending' in link.text]
 
     def __process_non_initial_page(self, importer, import_type, page):
         route_dereferencer = {
@@ -106,10 +107,11 @@ class ImporterReviewer:
             'collection-entries': 'collection_entries_page',
             'works-entries': 'work_entries_page'
         }
+        # print(f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}')
         self.s.driver.get(
             f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
         )
-        return [link.text for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text]
+        return [f"{link.text} Page{page}" for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text or 'Pending' in link.text]
 
 
 if __name__ == "__main__":
@@ -120,7 +122,7 @@ if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
     x = ImporterReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    failures = x.review_importer(args.importer)
-    with open(f'failures/{args.importer}.txt', 'w') as output:
+    failures = x.review_importer(args.importer, verbose=True)
+    with open(f'failures/{args.importer}_verbose.txt', 'w') as output:
         for failure in failures:
             output.write(f'{failure}\n')
