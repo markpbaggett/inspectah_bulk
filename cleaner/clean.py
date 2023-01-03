@@ -12,6 +12,7 @@ class CleanResults:
                 pid = line.split(' ')[0]
                 if pid not in failures:
                     failures.append(pid)
+        failures = sorted(failures)
         with open(filename, 'w') as actual_failures:
             for failure in failures:
                 actual_failures.write(f"{failure}\n")
