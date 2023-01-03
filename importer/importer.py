@@ -118,11 +118,15 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Find failures associated with an importer.')
     parser.add_argument("-i", "--importer", dest="importer", help="Specify csv to test.", required=True)
+    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true")
     args = parser.parse_args()
     settings = yaml.safe_load(open('settings.yml'))
     x = ImporterReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    failures = x.review_importer(args.importer, verbose=True)
-    with open(f'failures/{args.importer}_verbose.txt', 'w') as output:
+    failures = x.review_importer(args.importer, verbose=args.verbose)
+    output_file = f'failures/{args.importer}.txt'
+    if args.verbose:
+        output_file = f'failures/{args.importer}_verbose.txt'
+    with open(output_file, 'w') as output:
         for failure in failures:
             output.write(f'{failure}\n')
