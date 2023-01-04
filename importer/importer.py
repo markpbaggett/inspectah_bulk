@@ -99,6 +99,7 @@ class ImporterReviewer:
     def __initial_process_initial_page(self, importer, import_type):
         # print(f'{self.hyku_instance}/importers/{importer}#{import_type}')
         self.s.driver.get(f'{self.hyku_instance}/importers/{importer}#{import_type}')
+        self.take_screenshot(f'screenshots/{importer}_{import_type}_initial_page')
         return [f"{link.text} PageInitial" for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text or 'Pending' in link.text]
 
     def __process_non_initial_page(self, importer, import_type, page):
@@ -111,6 +112,7 @@ class ImporterReviewer:
         self.s.driver.get(
             f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
         )
+        self.take_screenshot(f'screenshots/{importer}_{import_type}_page_{page}')
         return [f"{link.text} Page{page}" for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text or 'Pending' in link.text]
 
 
