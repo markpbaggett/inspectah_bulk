@@ -26,7 +26,13 @@ class ImporterReviewer:
         return
 
     def take_screenshot(self, output):
-        return self.s.driver.save_screenshot(f'{output}.png')
+        original_size = self.s.driver.get_window_size()
+        required_width = self.s.driver.execute_script('return document.body.parentNode.scrollWidth')
+        required_height = self.s.driver.execute_script('return document.body.parentNode.scrollHeight')
+        self.s.driver.set_window_size(required_width, required_height)
+        self.s.driver.find_element_by_xpath('//div[@class="panel-body"]').screenshot(f'{output}.png')
+        self.s.driver.set_window_size(original_size['width'], original_size['height'])
+        return
 
     def __determine_total_and_failures(self):
         matches  = [
