@@ -79,6 +79,21 @@ class ImporterReviewer:
         else:
             return [failure.split(' ')[0] for failure in all_failures]
 
+    def find_source_identifiers(self, importer, source_identifiers, items=7603, verbose=False, type_to_check='work-entries'):
+        self.s.driver.get(f'{self.hyku_instance}/importers/{importer}?locale=en')
+        all_results = []
+        total_pages = math.ceil(items / 30)
+        initial_results = self.__look_at_initial_page_for_source_ids(importer, type_to_check, source_identifiers)
+        all_results.extend(initial_results)
+        page = 2
+        with tqdm(total=total_pages - 1) as pbar:
+            while page <= total_pages:
+                results = self.__look_at_non_initial_page_for_source_ids(importer, type_to_check, page, source_identifiers)
+                all_results.extend(results)
+                page += 1
+                pbar.update(1)
+        return all_results
+
     def process_failed_imports(self, importer, type_to_check):
         all_results = []
         """Initial Route Pattern
@@ -108,11 +123,41 @@ class ImporterReviewer:
         self.take_screenshot(f'screenshots/{importer}_{import_type}_initial_page')
         return [f"{link.text} PageInitial" for link in self.s.driver.find_elements_by_xpath('//tr') if 'Failed' in link.text or 'Pending' in link.text]
 
+    def __look_at_initial_page_for_source_ids(self, importer, import_type, source_identifiers):
+        self.s.driver.get(f'{self.hyku_instance}/importers/{importer}#{import_type}')
+        links = [link.text for link in self.s.driver.find_elements_by_xpath('//tr')]
+        found = []
+        for identifier in source_identifiers:
+            for link in links:
+                if identifier in link:
+                    self.take_screenshot(f'screenshots/source_identifier/{identifier}')
+                    found.append(link)
+        return found
+
+    def __look_at_non_initial_page_for_source_ids(self, importer, import_type, page, source_identifiers):
+        route_dereferencer = {
+            'file-set-entries': 'file_set_entries_page',
+            'collection-entries': 'collection_entries_page',
+            'work-entries': 'work_entries_page'
+        }
+        # print(f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}')
+        self.s.driver.get(
+            f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}'
+        )
+        links = [link.text for link in self.s.driver.find_elements_by_xpath('//tr')]
+        found = []
+        for identifier in source_identifiers:
+            for link in links:
+                if identifier in link:
+                    self.take_screenshot(f'screenshots/source_identifier/{identifier}')
+                    found.append(link)
+        return found
+
     def __process_non_initial_page(self, importer, import_type, page):
         route_dereferencer = {
             'file-set-entries': 'file_set_entries_page',
             'collection-entries': 'collection_entries_page',
-            'works-entries': 'work_entries_page'
+            'work-entries': 'work_entries_page'
         }
         # print(f'{self.hyku_instance}/importers/{importer}?{route_dereferencer[import_type]}={page}#{import_type}')
         self.s.driver.get(
@@ -127,14 +172,41 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Find failures associated with an importer.')
     parser.add_argument("-i", "--importer", dest="importer", help="Specify csv to test.", required=True)
     parser.add_argument("-v", "--verbose", dest="verbose", action="store_true")
+    parser.add_argument('-t', "--type_of_crawl", dest="type_of_crawl", default="failures")
     args = parser.parse_args()
     settings = yaml.safe_load(open('settings.yml'))
     x = ImporterReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    failures = x.review_importer(args.importer, verbose=args.verbose)
-    output_file = f'failures/{args.importer}.txt'
-    if args.verbose:
-        output_file = f'failures/{args.importer}_verbose.txt'
-    with open(output_file, 'w') as output:
-        for failure in failures:
-            output.write(f'{failure}\n')
+    if args.type_of_crawl == 'failures':
+        failures = x.review_importer(args.importer, verbose=args.verbose)
+        output_file = f'failures/{args.importer}.txt'
+        if args.verbose:
+            output_file = f'failures/{args.importer}_verbose.txt'
+        with open(output_file, 'w') as output:
+            for failure in failures:
+                output.write(f'{failure}\n')
+    elif args.type_of_crawl == 'find_source_identifiers':
+        source_identifiers = [
+            'roth:4264 ',
+            'roth:2468 ',
+            'roth:696 ',
+            'roth:4042 ',
+            'roth:201 ',
+            'roth:3312 ',
+            'roth:7545 ',
+            'roth:698 ',
+            'roth:1432 ',
+            'roth:6370 ',
+            'roth:5187',
+            'roth:4497',
+            'roth:4670',
+            'roth:655',
+            'roth:3339',
+            'roth:6370'
+        ]
+        identifiers = x.find_source_identifiers(args.importer, source_identifiers, verbose=args.verbose)
+        output_file = f'source_identifiers/{args.importer}.txt'
+        print(identifiers)
+        with open(output_file, 'w') as output:
+            for identifier in identifiers:
+                output.write(f'{identifier}\n')
