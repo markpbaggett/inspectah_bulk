@@ -8,7 +8,7 @@ from tqdm import tqdm
 class CollectionReviewer:
     def __init__(self, collection, initial_auth=None, hyku_instance='https://dc.utk-hyku-production.notch8.cloud'):
         self.s = Session(
-            webdriver_path='/usr/local/bin/chromedriver',
+            webdriver_path='/usr/local/bin/chromedriver116',
             browser='chrome',
             default_timeout=15,
             webdriver_options={'arguments': ['headless']}
