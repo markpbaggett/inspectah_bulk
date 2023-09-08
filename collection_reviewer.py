@@ -54,7 +54,9 @@ class CollectionReviewer:
                 link['text'] = link['text'].split('\n')[1]
             else:
                 link['text'] = link['text'].split('Display summary details of ')[1]
-        print(links)
+        print('\nReviewing Collections\n')
+        for link in tqdm(links):
+            self.review_collection(link)
         return
 
     def review_collection(self, collection):
@@ -70,7 +72,6 @@ class CollectionReviewer:
             collection_metadata['works'] = int(works[0])
         collection_metadata['last_page'] = [link.text for link in self.s.driver.find_elements_by_xpath('//ul[@class="pagination"]/li/a')][-1]
         collection_metadata['middle_page'] = math.ceil(int(collection_metadata['last_page'])/2)
-        print(collection_metadata)
         ### Create directory for collection and Take Screenshots of Initial Page
         if not os.path.exists(f"collection_review/{collection_metadata['directory']}"):
             os.makedirs(f"collection_review/{collection_metadata['directory']}")
@@ -93,7 +94,6 @@ class CollectionReviewer:
 
     def review_work(self, work, output_directory):
         self.s.driver.get(work)
-        print(work)
         self.take_work_screenshot(f"collection_review/{output_directory}/screenshots/{work.split('/')[-1].replace('?locale=en', '')}")
         return
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     settings = yaml.safe_load(open('settings.yml'))
     x = CollectionReviewer((settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
-    # x.access_collection_page()
-    sample_collection = {'link': 'https://dc.utk-hyku-production.notch8.cloud/dashboard/collections/afc86f32-3367-4a89-93f5-9eeaea24cf38?locale=en', 'text': 'WPA/TVA Archaeology Photographs'}
-    x.review_collection(sample_collection)
+    x.access_collection_page()
+    # sample_collection = {'link': 'https://dc.utk-hyku-production.notch8.cloud/dashboard/collections/afc86f32-3367-4a89-93f5-9eeaea24cf38?locale=en', 'text': 'WPA/TVA Archaeology Photographs'}
+    # x.review_collection(sample_collection)
     # x.review_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/f4028afb-96c3-4b1b-8c9e-173b8f98a140?locale=en', 'WPATVA_Archaeology_Photographs')
