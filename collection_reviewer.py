@@ -32,8 +32,11 @@ class CollectionReviewer:
         required_width = self.s.driver.execute_script('return document.body.parentNode.scrollWidth')
         required_height = self.s.driver.execute_script('return document.body.parentNode.scrollHeight')
         self.s.driver.set_window_size(required_width, required_height)
-        self.s.driver.find_element_by_xpath('//div[@class="panel-body"]').screenshot(f'{output}.png')
-        self.s.driver.set_window_size(original_size['width'], original_size['height'])
+        try:
+            self.s.driver.find_element_by_xpath('//div[@class="panel-body"]').screenshot(f'{output}.png')
+            self.s.driver.set_window_size(original_size['width'], original_size['height'])
+        except selenium.common.exceptions.NoSuchElementException:
+            print(f'No panel body found for {output}')
         return
 
     def take_work_screenshot(self, output):
@@ -41,8 +44,11 @@ class CollectionReviewer:
         required_width = self.s.driver.execute_script('return document.body.parentNode.scrollWidth')
         required_height = self.s.driver.execute_script('return document.body.parentNode.scrollHeight')
         self.s.driver.set_window_size(required_width, required_height)
-        self.s.driver.find_element_by_xpath('//div[@class="work-type-container"]').screenshot(f'{output}.png')
-        self.s.driver.set_window_size(original_size['width'], original_size['height'])
+        try:
+            self.s.driver.find_element_by_xpath('//div[@class="work-type-container"]').screenshot(f'{output}.png')
+            self.s.driver.set_window_size(original_size['width'], original_size['height'])
+        except selenium.common.exceptions.NoSuchElementException:
+            print(f'No work type container found for {output}')
         return
 
     def access_collection_page(self):
@@ -66,35 +72,38 @@ class CollectionReviewer:
             "directory": f"{collection['text'].replace(' ', '_').replace('/', '').strip()}",
             "works": 0,
         }
-        self.s.driver.get(collection_metadata['link'])
-        works = [link.text for link in self.s.driver.find_elements_by_xpath('//dl[@class="dl-horizontal metadata-collections"]/dd/span[@itemprop="total_items"]')]
-        if len(works) == 1:
-            collection_metadata['works'] = int(works[0])
-        collection_metadata['last_page'] = [link.text for link in self.s.driver.find_elements_by_xpath('//ul[@class="pagination"]/li/a')][-1]
-        collection_metadata['middle_page'] = math.ceil(int(collection_metadata['last_page'])/2)
-        ### Create directory for collection and Take Screenshots of Initial Page
-        if not os.path.exists(f"collection_review/{collection_metadata['directory']}"):
-            os.makedirs(f"collection_review/{collection_metadata['directory']}")
-            os.makedirs(f"collection_review/{collection_metadata['directory']}/screenshots")
-        self.take_screenshot(f"collection_review/{collection_metadata['directory']}/screenshots/initial_page")
-        check_these = [link.get_attribute('href') for link in self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
-        self.check_some_works(check_these, collection_metadata['directory'])
-        ### Take Screenshots of Middle Page
-        self.s.driver.get(f"{collection_metadata['link']}&page={collection_metadata['middle_page']}")
-        self.take_screenshot(f"collection_review/{collection_metadata['directory']}/screenshots/middle_page")
-        check_these = [link.get_attribute('href') for link in
-                       self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
-        self.check_some_works(check_these, collection_metadata['directory'])
-        ### Take Screenshots of Last Page
-        self.s.driver.get(f"{collection_metadata['link']}&page={collection_metadata['last_page']}")
-        self.take_screenshot(f"collection_review/{collection_metadata['directory']}/screenshots/last_page")
-        check_these = [link.get_attribute('href') for link in
-                       self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
-        self.check_some_works(check_these, collection_metadata['directory'])
+        if 'Default Admin Set' not in collection_metadata['title']:
+            self.s.driver.get(collection_metadata['link'])
+            works = [link.text for link in self.s.driver.find_elements_by_xpath('//dl[@class="dl-horizontal metadata-collections"]/dd/span[@itemprop="total_items"]')]
+            if len(works) == 1:
+                collection_metadata['works'] = int(works[0])
+            collection_metadata['last_page'] = [link.text for link in self.s.driver.find_elements_by_xpath('//ul[@class="pagination"]/li/a')][-1]
+            collection_metadata['middle_page'] = math.ceil(int(collection_metadata['last_page'].replace(',', ''))/2)
+            print(collection_metadata)
+            ### Create directory for collection and Take Screenshots of Initial Page
+            if not os.path.exists(f"collection_review_2/{collection_metadata['directory']}"):
+                os.makedirs(f"collection_review_2/{collection_metadata['directory']}")
+                os.makedirs(f"collection_review_2/{collection_metadata['directory']}/screenshots")
+            self.take_screenshot(f"collection_review_2/{collection_metadata['directory']}/screenshots/initial_page")
+            check_these = [link.get_attribute('href') for link in self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
+            self.check_some_works(check_these, collection_metadata['directory'])
+            ### Take Screenshots of Middle Page
+            self.s.driver.get(f"{collection_metadata['link']}&page={collection_metadata['middle_page']}")
+            self.take_screenshot(f"collection_review_2/{collection_metadata['directory']}/screenshots/middle_page")
+            check_these = [link.get_attribute('href') for link in
+                           self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
+            self.check_some_works(check_these, collection_metadata['directory'])
+            ### Take Screenshots of Last Page
+            self.s.driver.get(f"{collection_metadata['link']}&page={collection_metadata['last_page']}")
+            self.take_screenshot(f"collection_review_2/{collection_metadata['directory']}/screenshots/last_page")
+            check_these = [link.get_attribute('href') for link in
+                           self.s.driver.find_elements_by_xpath('//div[@class="media"]/a[@class="media-left"]')]
+            self.check_some_works(check_these, collection_metadata['directory'])
+        return
 
     def review_work(self, work, output_directory):
         self.s.driver.get(work)
-        self.take_work_screenshot(f"collection_review/{output_directory}/screenshots/{work.split('/')[-1].replace('?locale=en', '')}")
+        self.take_work_screenshot(f"collection_review_2/{output_directory}/screenshots/{work.split('/')[-1].replace('?locale=en', '')}")
         return
 
     def check_some_works(self, works, output_directory):
