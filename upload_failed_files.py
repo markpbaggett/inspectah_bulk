@@ -76,7 +76,7 @@ class CollectionReviewer:
                 failures.append({'id': row['source_identifier'], 'title': row['title']})
         return failures
 
-    def process_failures(self):
+    def find_parents_of_failures(self):
         found = []
         for failure in self.failures:
             pid = failure['id'].split('_')[0]
@@ -86,7 +86,27 @@ class CollectionReviewer:
                 found.append({'parent': path_to_parent, 'title': failure['title'], 'id': failure['id']})
             else:
                 print(f"Could not find {pid} in the works csv.")
-        return
+        return found
+
+    def access_attachment(self, parent_info):
+        self.s.driver.get(parent_info['parent'])
+        attachment = self.s.driver.find_element_by_link_text(parent_info['title'])
+        attachment_path = attachment.get_attribute("href")
+        self.s.driver.get(attachment_path)
+        fileset = self.s.driver.find_element_by_link_text(parent_info['title'])
+        fileset_path = fileset.get_attribute("href")
+        return fileset_path
+
+    def process_failures(self):
+        #parents = self.find_parents_of_failures()
+        parents = [
+            {'parent': 'https://dc.utk-hyku-production.notch8.cloud/concern/audios/bc19f68c-46f2-4004-935e-75081e6967c9',
+             'title': 'OBJ',
+             'id': 'wwiioh:2503_OBJ_fileset'}
+        ]
+        for parent in parents:
+            print(self.access_attachment(parent))
+
 
 if __name__ == "__main__":
     # import argparse
