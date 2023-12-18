@@ -4,6 +4,9 @@ import yaml
 import math
 from tqdm import tqdm
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 
 class CollectionReviewer:
@@ -34,7 +37,8 @@ class CollectionReviewer:
         required_height = self.s.driver.execute_script('return document.body.parentNode.scrollHeight')
         self.s.driver.set_window_size(required_width, required_height)
         try:
-            self.s.driver.find_element_by_xpath('//section[@class="works-wrapper"]').screenshot(f'{output}.png')
+            # self.s.driver.find_element_by_xpath('//section[@class="works-wrapper"]').screenshot(f'{output}.png')
+            self.s.driver.find_element_by_xpath('//div[@class="main-content maximized"]').screenshot(f'{output}.png')
             self.s.driver.set_window_size(original_size['width'], original_size['height'])
         except NoSuchElementException:
             print(f'No works wrapper found for {output}')
@@ -72,15 +76,37 @@ class CollectionReviewer:
         for attachment in attachments:
             if pattern in attachment.text:
                 self.get_attachment(attachment.get_attribute('href'))
-        edit_url = url.replace('?locale=en', '/edit?locale=en')
-        self.edit_work(edit_url)
+        self.edit_work(url)
         return
 
     def edit_work(self, url):
-        self.s.driver.get(url)
+        edit_url = url.replace('?locale=en', '/edit?locale=en')
+        self.s.driver.get(edit_url)
         save_changes_button = self.s.driver.find_element_by_xpath(
             '//input[@type="submit" and @value="Save changes" and @class="btn btn-primary"]')
         save_changes_button.click()
+        return
+
+    def set_file_manager(self, url, pattern):
+        manager_url = url.replace('?locale=en', '/file_manager?locale=en')
+        self.s.driver.get(manager_url)
+        attachments = self.s.driver.find_elements_by_xpath(
+            '//li/div[@class="panel panel-default"]')
+        for attachment in attachments:
+            attachment_title = attachment.find_element_by_xpath('./form/div/div/div[@class="form-group string required attachment_title"]/input')
+            if pattern in attachment_title.get_attribute('value'):
+                thumbnail_radio = attachment.find_element_by_xpath('//input[@name="thumbnail_id"]')
+                thumbnail_radio.click()
+                representative_radio = attachment.find_element_by_xpath('//input[@name="representative_id"]')
+                representative_radio.click()
+                button_text = "Save"
+                button_xpath = f'//button[@name="button" and @type="submit" and contains(@class, "btn-primary") and @data-action="save-actions" and contains(text(), "{button_text}")]'
+                button = self.s.driver.find_element_by_xpath(button_xpath)
+                print(button.text)
+                self.s.driver.execute_script("arguments[0].classList.remove('disabled')", button)
+                new_button = self.s.driver.find_element_by_xpath(button_xpath)
+                self.take_screenshot('file_manager')
+                new_button.click()
         return
 
     def get_attachment(self, url):
@@ -111,5 +137,6 @@ if __name__ == "__main__":
     # x.process_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a?locale=en', '_i')
     # print(x.get_attachment('https://dc.utk-hyku-production.notch8.cloud/concern/parent/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a/attachments/e6ef4b3d-16fd-489c-ab75-827cd6bc519b'))
     # print(x.edit_fileset('https://dc.utk-hyku-production.notch8.cloud/concern/parent/e6ef4b3d-16fd-489c-ab75-827cd6bc519b/file_sets/0e29f4c0-b1b6-42db-a480-03b80bdc4509'))
-    x.edit_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0/edit?locale=en')
+    # x.edit_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0/edit?locale=en')
+    x.set_file_manager('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0?locale=en', pattern='OBJ')
 
