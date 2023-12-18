@@ -99,14 +99,10 @@ class CollectionReviewer:
                 thumbnail_radio.click()
                 representative_radio = attachment.find_element_by_xpath('//input[@name="representative_id"]')
                 representative_radio.click()
-                button_text = "Save"
-                button_xpath = f'//button[@name="button" and @type="submit" and contains(@class, "btn-primary") and @data-action="save-actions" and contains(text(), "{button_text}")]'
-                button = self.s.driver.find_element_by_xpath(button_xpath)
-                print(button.text)
+                button = self.s.driver.find_element_by_xpath('//button[@name="button" and @type="submit" and contains(@class, "btn-primary") and @data-action="save-actions"]')
                 self.s.driver.execute_script("arguments[0].classList.remove('disabled')", button)
-                new_button = self.s.driver.find_element_by_xpath(button_xpath)
                 self.take_screenshot('file_manager')
-                new_button.click()
+                self.s.driver.execute_script("arguments[0].click();", button)
         return
 
     def get_attachment(self, url):
