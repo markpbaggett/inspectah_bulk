@@ -66,6 +66,36 @@ class CollectionReviewer:
             if data['src'] == "https://dc.utk-hyku-production.notch8.cloud/assets/work-ff055336041c3f7d310ad69109eda4a887b16ec501f35afc0a547c4adb97ee72.png":
                 print(data['href'])
 
+    def process_work(self, url, pattern):
+        self.s.driver.get(url)
+        attachments = self.s.driver.find_elements_by_xpath('//td[@class="attribute attribute-filename ensure-wrapped"]/a')
+        for attachment in attachments:
+            if pattern in attachment.text:
+                self.get_attachment(attachment.get_attribute('href'))
+        edit_url = url.replace('?locale=en', '/edit?locale=en')
+        self.edit_work(edit_url)
+        return
+
+    def edit_work(self, url):
+        self.s.driver.get(url)
+        save_changes_button = self.s.driver.find_element_by_xpath(
+            '//input[@type="submit" and @value="Save changes" and @class="btn btn-primary"]')
+        save_changes_button.click()
+        return
+
+    def get_attachment(self, url):
+        self.s.driver.get(url)
+        fileset = self.s.driver.find_elements_by_xpath('//td[@class="attribute attribute-filename ensure-wrapped"]/a')[0]
+        self.edit_fileset(fileset.get_attribute('href'))
+        return
+
+    def edit_fileset(self, url):
+        fileset = url.split('/')[-1]
+        self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/concern/file_sets/{fileset}/edit?locale=en')
+        save_button = self.s.driver.find_element_by_xpath(
+            '//input[@type="submit" and @value="Save" and @class="btn btn-primary"]')
+        save_button.click()
+        return
 
 if __name__ == "__main__":
     import argparse
@@ -77,4 +107,9 @@ if __name__ == "__main__":
     x = CollectionReviewer(args.collection, (settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
     x.get_last_page()
-    x.review_collection()
+    # x.review_collection()
+    # x.process_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a?locale=en', '_i')
+    # print(x.get_attachment('https://dc.utk-hyku-production.notch8.cloud/concern/parent/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a/attachments/e6ef4b3d-16fd-489c-ab75-827cd6bc519b'))
+    # print(x.edit_fileset('https://dc.utk-hyku-production.notch8.cloud/concern/parent/e6ef4b3d-16fd-489c-ab75-827cd6bc519b/file_sets/0e29f4c0-b1b6-42db-a480-03b80bdc4509'))
+    x.edit_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0/edit?locale=en')
+
