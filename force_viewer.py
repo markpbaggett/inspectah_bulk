@@ -124,7 +124,7 @@ class CollectionReviewer:
                 self.process_work(data['href'])
         if page is None and self.last_page > 1:
             self.review_collection(page=2)
-        elif page in None and self.last_page == 1:
+        elif page is None and self.last_page == 1:
             return
         elif page != self.last_page:
             return self.review_collection(page=page+1)
@@ -183,15 +183,12 @@ class CollectionReviewer:
         """
         manager_url = url.replace('?locale=en', '/file_manager?locale=en')
         self.s.driver.get(manager_url)
-        print(f"The pattern is {self.pattern}.")
         attachments = self.s.driver.find_elements_by_xpath(
             '//li/div[@class="panel panel-default"]')
         for attachment in attachments:
             attachment_title = attachment.find_element_by_xpath('./form/div/div/div[@class="form-group string required attachment_title"]/input')
             if self.pattern in attachment_title.get_attribute('value'):
-                print(f'I am the pattern inside {self.pattern}')
                 thumbnail_radio = attachment.find_element_by_xpath('./div/span/input[@name="thumbnail_id"]')
-                print(thumbnail_radio.get_attribute('value'))
                 thumbnail_radio.click()
                 representative_radio = attachment.find_element_by_xpath('./div/span/input[@name="representative_id"]')
                 representative_radio.click()
