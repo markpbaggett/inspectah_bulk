@@ -10,8 +10,9 @@ from selenium.webdriver.common.by import By
 
 
 class CollectionReviewer:
-    def __init__(self, collection, initial_auth=('user', 'pass'), hyku_instance='https://dc.utk-hyku-production.notch8.cloud'):
+    def __init__(self, collection, pattern, initial_auth=('user', 'pass'), hyku_instance='https://dc.utk-hyku-production.notch8.cloud'):
         self.collection = collection
+        self.pattern = pattern
         self.s = Session(
             webdriver_path='/usr/local/bin/chromedriver120',
             browser='chrome',
@@ -57,12 +58,10 @@ class CollectionReviewer:
 
     def review_collection(self, page=None):
         if page is None:
-            collection_url = collection_url = f"https://dc.utk-hyku-production.notch8.cloud/dashboard/collections/{self.collection}?utf8=%E2%9C%93&sort=score+desc%2C+system_create_dtsi+desc&per_page=100&locale=en"
+            collection_url = f"https://dc.utk-hyku-production.notch8.cloud/dashboard/collections/{self.collection}?utf8=%E2%9C%93&sort=score+desc%2C+system_create_dtsi+desc&per_page=100&locale=en"
         else:
             collection_url = f"https://dc.utk-hyku-production.notch8.cloud/dashboard/collections/{self.collection}?utf8=%E2%9C%93&sort=score+desc%2C+system_create_dtsi+desc&per_page=100&locale=en&page={page}"
         self.s.driver.get(collection_url)
-        print(collection_url)
-        x.take_screenshot('quick_test')
         elements = self.s.driver.find_elements_by_xpath('//a[img[@class="hidden-xs file_listing_thumbnail"]]')
         data = [{"src": element.find_element_by_xpath('./img').get_attribute('src'),
                  "href": element.get_attribute('href')} for element in elements]
@@ -70,13 +69,14 @@ class CollectionReviewer:
             if data['src'] == "https://dc.utk-hyku-production.notch8.cloud/assets/work-ff055336041c3f7d310ad69109eda4a887b16ec501f35afc0a547c4adb97ee72.png":
                 print(data['href'])
 
-    def process_work(self, url, pattern):
+    def process_work(self, url):
         self.s.driver.get(url)
         attachments = self.s.driver.find_elements_by_xpath('//td[@class="attribute attribute-filename ensure-wrapped"]/a')
         for attachment in attachments:
-            if pattern in attachment.text:
+            if self.pattern in attachment.text:
                 self.get_attachment(attachment.get_attribute('href'))
         self.edit_work(url)
+        self.set_file_manager(url)
         return
 
     def edit_work(self, url):
@@ -87,14 +87,14 @@ class CollectionReviewer:
         save_changes_button.click()
         return
 
-    def set_file_manager(self, url, pattern):
+    def set_file_manager(self, url):
         manager_url = url.replace('?locale=en', '/file_manager?locale=en')
         self.s.driver.get(manager_url)
         attachments = self.s.driver.find_elements_by_xpath(
             '//li/div[@class="panel panel-default"]')
         for attachment in attachments:
             attachment_title = attachment.find_element_by_xpath('./form/div/div/div[@class="form-group string required attachment_title"]/input')
-            if pattern in attachment_title.get_attribute('value'):
+            if self.pattern in attachment_title.get_attribute('value'):
                 thumbnail_radio = attachment.find_element_by_xpath('//input[@name="thumbnail_id"]')
                 thumbnail_radio.click()
                 representative_radio = attachment.find_element_by_xpath('//input[@name="representative_id"]')
@@ -119,6 +119,7 @@ class CollectionReviewer:
         save_button.click()
         return
 
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Crawl collection and add viewer.')
@@ -134,5 +135,5 @@ if __name__ == "__main__":
     # print(x.get_attachment('https://dc.utk-hyku-production.notch8.cloud/concern/parent/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a/attachments/e6ef4b3d-16fd-489c-ab75-827cd6bc519b'))
     # print(x.edit_fileset('https://dc.utk-hyku-production.notch8.cloud/concern/parent/e6ef4b3d-16fd-489c-ab75-827cd6bc519b/file_sets/0e29f4c0-b1b6-42db-a480-03b80bdc4509'))
     # x.edit_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0/edit?locale=en')
-    x.set_file_manager('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0?locale=en', pattern='OBJ')
+    x.set_file_manager('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0?locale=en')
 
