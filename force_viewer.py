@@ -243,4 +243,4 @@ if __name__ == "__main__":
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
     x.get_last_page()
     x.review_collection()
-
+    x.s.driver.quit()
