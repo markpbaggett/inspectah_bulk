@@ -122,8 +122,10 @@ class CollectionReviewer:
         for data in data:
             if data['src'] == "https://dc.utk-hyku-production.notch8.cloud/assets/work-ff055336041c3f7d310ad69109eda4a887b16ec501f35afc0a547c4adb97ee72.png":
                 self.process_work(data['href'])
-        if page is None:
+        if page is None and self.last_page > 1:
             self.review_collection(page=2)
+        elif page in None and self.last_page == 1:
+            return
         elif page != self.last_page:
             return self.review_collection(page=page+1)
         else:
@@ -146,6 +148,7 @@ class CollectionReviewer:
         for attachment in attachments:
             if self.pattern in attachment.text:
                 self.get_attachment(attachment.get_attribute('href'))
+                break
         self.edit_work(url)
         self.set_file_manager(url)
         return
@@ -180,18 +183,21 @@ class CollectionReviewer:
         """
         manager_url = url.replace('?locale=en', '/file_manager?locale=en')
         self.s.driver.get(manager_url)
+        print(f"The pattern is {self.pattern}.")
         attachments = self.s.driver.find_elements_by_xpath(
             '//li/div[@class="panel panel-default"]')
         for attachment in attachments:
             attachment_title = attachment.find_element_by_xpath('./form/div/div/div[@class="form-group string required attachment_title"]/input')
             if self.pattern in attachment_title.get_attribute('value'):
-                thumbnail_radio = attachment.find_element_by_xpath('//input[@name="thumbnail_id"]')
+                print(f'I am the pattern inside {self.pattern}')
+                thumbnail_radio = attachment.find_element_by_xpath('./div/span/input[@name="thumbnail_id"]')
+                print(thumbnail_radio.get_attribute('value'))
                 thumbnail_radio.click()
-                representative_radio = attachment.find_element_by_xpath('//input[@name="representative_id"]')
+                representative_radio = attachment.find_element_by_xpath('./div/span/input[@name="representative_id"]')
                 representative_radio.click()
+                self.take_screenshot(f'thumbnail_manager/{manager_url.split("/")[-2]}')
                 button = self.s.driver.find_element_by_xpath('//button[@name="button" and @type="submit" and contains(@class, "btn-primary") and @data-action="save-actions"]')
                 self.s.driver.execute_script("arguments[0].classList.remove('disabled')", button)
-                self.take_screenshot('file_manager')
                 self.s.driver.execute_script("arguments[0].click();", button)
         return
 
@@ -236,14 +242,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--pattern", dest="pattern", help="Specify the pattern to search for.", required=True)
     args = parser.parse_args()
     settings = yaml.safe_load(open('settings.yml'))
-    # collection_for_testing = 'f319e61e-4606-4cee-ae62-2523e63cf806'
     x = CollectionReviewer(args.collection, args.pattern, (settings['user'], settings['password']))
     x.sign_in_to_hyku(settings['hyku_user'], settings['hyku_password'])
     x.get_last_page()
-    # x.review_collection()
-    # x.process_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a?locale=en', '_i')
-    # print(x.get_attachment('https://dc.utk-hyku-production.notch8.cloud/concern/parent/7ab05b9f-5e10-446e-9e9f-e23e87c63c0a/attachments/e6ef4b3d-16fd-489c-ab75-827cd6bc519b'))
-    # print(x.edit_fileset('https://dc.utk-hyku-production.notch8.cloud/concern/parent/e6ef4b3d-16fd-489c-ab75-827cd6bc519b/file_sets/0e29f4c0-b1b6-42db-a480-03b80bdc4509'))
-    # x.edit_work('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0/edit?locale=en')
-    # x.set_file_manager('https://dc.utk-hyku-production.notch8.cloud/concern/images/721079f9-d11f-4f8f-a88c-8c63ed9d2dd0?locale=en')
+    x.review_collection()
 
