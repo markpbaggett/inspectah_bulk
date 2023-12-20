@@ -239,9 +239,9 @@ class CollectionReviewer:
     def log_questionable_things(self):
         with open(f'questionable_from_{self.collection}.txt', 'w') as questionable_file:
             for work in self.questionable_works:
-                questionable_file.write(f'{work}\n')
+                questionable_file.write(f'Work: {work}\n')
             for fileset in self.questionable_filesets:
-                questionable_file.write(f'{fileset}\n')
+                questionable_file.write(f'Fileset: {fileset}\n')
 
 
 if __name__ == "__main__":
