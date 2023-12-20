@@ -34,6 +34,8 @@ class CollectionReviewer:
                 f'https://{initial_auth[0]}:{initial_auth[1]}@{hyku_instance.replace("https://", "")}/users/sign_in?locale=en'
             )
         self.last_page = 1
+        self.questionable_works = []
+        self.questionable_filesets = []
 
     def sign_in_to_hyku(self, username, password):
         """Signs into the Hyku dashboard.
@@ -144,6 +146,7 @@ class CollectionReviewer:
         """
         print(f"\tProcessing work {url}.")
         self.s.driver.get(url)
+        self.questionable_works.append(url)
         attachments = self.s.driver.find_elements_by_xpath('//td[@class="attribute attribute-filename ensure-wrapped"]/a')
         for attachment in attachments:
             if self.pattern in attachment.text:
@@ -226,10 +229,19 @@ class CollectionReviewer:
         """
         fileset = url.split('/')[-1]
         self.s.driver.get(f'https://dc.utk-hyku-production.notch8.cloud/concern/file_sets/{fileset}/edit?locale=en')
+        self.questionable_filesets.append(f'https://dc.utk-hyku-production.notch8.cloud/concern/file_sets/{fileset}')
         save_button = self.s.driver.find_element_by_xpath(
-            '//input[@type="submit" and @value="Save" and @class="btn btn-primary"]')
+            '//input[@type="submit" and @value="Save" and @class="btn btn-primary"]'
+        )
         save_button.click()
         return
+
+    def log_questionable_things(self):
+        with open(f'questionable_from_{self.collection}.txt', 'w') as questionable_file:
+            for work in self.questionable_works:
+                questionable_file.write(f'{work}\n')
+            for fileset in self.questionable_filesets:
+                questionable_file.write(f'{fileset}\n')
 
 
 if __name__ == "__main__":
@@ -244,3 +256,4 @@ if __name__ == "__main__":
     x.get_last_page()
     x.review_collection()
     x.s.driver.quit()
+    x.log_questionable_things()
